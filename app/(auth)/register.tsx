@@ -4,6 +4,8 @@ import { Button, Input, Text } from '@rneui/themed';
 import { Link } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 
+
+
 const ForwardedButton = React.forwardRef((props: any, ref) => (
   <Button {...props} />
 ));
