@@ -3,37 +3,65 @@ import { StyleSheet, View, ActivityIndicator, KeyboardAvoidingView, Platform, Sc
 import { Button, Input, Text } from '@rneui/themed';
 import { Link } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
-import { FontAwesome } from '@expo/vector-icons';
 
 const ForwardedButton = React.forwardRef((props: any, ref) => (
   <Button {...props} />
 ));
 
-export default function SignInScreen() {
+export default function SignUpScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  const { signIn, isLoading } = useAuth();
-  console.log(email)
+  const [successMessage, setSuccessMessage] = useState('');
+  const { signUp, isLoading } = useAuth();
+
   const validateForm = () => {
     setErrorMessage('');
+    setSuccessMessage('');
     
-    if (!email || !password) {
-      setErrorMessage('Email and password are required');
+    if (!email || !password || !confirmPassword) {
+      setErrorMessage('All fields are required');
+      return false;
+    }
+    
+    if (password !== confirmPassword) {
+      setErrorMessage('Passwords do not match');
+      return false;
+    }
+    
+    if (password.length < 6) {
+      setErrorMessage('Password must be at least 6 characters');
+      return false;
+    }
+    
+    // Basic email validation
+    const emailRegex = /\S+@\S+\.\S+/;
+    if (!emailRegex.test(email)) {
+      setErrorMessage('Please enter a valid email address');
       return false;
     }
     
     return true;
   };
 
-  const handleSignIn = async () => {
-    if (!validateForm()) return;
+  const handleSignUp = async () => {
+    // if (!validateForm()) return;
     
-    console.log('Attempting to sign in with:', email);
-    const { error } = await signIn(email, password);
+    console.log('Attempting to sign up with:', email);
+    const { error, success } = await signUp(email, password);
     
     if (error) {
-      setErrorMessage(error.message || 'Failed to sign in. Please check your credentials.');
+      setErrorMessage(error.message || 'Failed to create account');
+      return;
+    }
+    
+    if (success) {
+      setSuccessMessage('Account created! Please check your email for verification if required.');
+      // Clear form
+      setEmail('');
+      setPassword('');
+      setConfirmPassword('');
     }
   };
 
@@ -43,14 +71,18 @@ export default function SignInScreen() {
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text h3 style={styles.title}>Sign In</Text>
-        <Text style={styles.subtitle}>Welcome back! Please sign in to continue.</Text>
+        <Text h3 style={styles.title}>Create Account</Text>
+        <Text style={styles.subtitle}>Sign up to get started with the app</Text>
         
         {errorMessage ? (
           <Text style={styles.errorText}>{errorMessage}</Text>
         ) : null}
         
-        <View style={[styles.formField, styles.mt20, {padding: 10},]}>
+        {successMessage ? (
+          <Text style={styles.successText}>{successMessage}</Text>
+        ) : null}
+        
+        <View style={[styles.formField, styles.mt20]}>
           <Input
             label="Email"
             leftIcon={{ type: 'font-awesome', name: 'envelope' }}
@@ -73,37 +105,43 @@ export default function SignInScreen() {
             onChangeText={setPassword}
             value={password}
             secureTextEntry
-            placeholder="Password"
+            placeholder="At least 6 characters"
             autoCapitalize="none"
-            textContentType="password"
+            textContentType="newPassword"
             disabled={isLoading}
             errorStyle={{ height: 0 }}
-          /><FontAwesome  name='eye' />
+          />
+        </View>
+        
+        <View style={styles.formField}>
+          <Input
+            label="Confirm Password"
+            leftIcon={{ type: 'font-awesome', name: 'lock' }}
+            onChangeText={setConfirmPassword}
+            value={confirmPassword}
+            secureTextEntry
+            placeholder="Confirm your password"
+            autoCapitalize="none"
+            textContentType="newPassword"
+            disabled={isLoading}
+            errorStyle={{ height: 0 }}
+          />
         </View>
         
         <View style={[styles.formField, styles.mt20]}>
           <Button
-            title={isLoading ? "" : "Sign In"}
+            title={isLoading ? "" : "Create Account"}
             disabled={isLoading}
-            onPress={handleSignIn}
-            buttonStyle={styles.signInButton}
+            onPress={handleSignUp}
+            buttonStyle={styles.signUpButton}
             icon={isLoading ? <ActivityIndicator color="white" size="small" /> : null}
           />
         </View>
         
-        <View style={styles.linksContainer}>
-          <Link href="/(auth)/register" >
+        <View style={styles.loginLinkContainer}>
+          <Link href="/(auth)/signin" asChild>
             <ForwardedButton
-              title="Don't have an account? Sign Up"
-              type="clear"
-              titleStyle={styles.linkText}
-              disabled={isLoading}
-            />
-          </Link>
-          
-          <Link href="/(auth)/forgot-password" >
-            <ForwardedButton
-              title="Forgot Password?"
+              title="Already have an account? Sign In"
               type="clear"
               titleStyle={styles.linkText}
               disabled={isLoading}
@@ -133,11 +171,17 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: '#666',
-    marginBottom: 30,
+    marginBottom: 20,
     textAlign: 'center',
   },
   errorText: {
     color: '#ff3b30',
+    textAlign: 'center',
+    marginBottom: 20,
+    fontSize: 14,
+  },
+  successText: {
+    color: '#34c759',
     textAlign: 'center',
     marginBottom: 20,
     fontSize: 14,
@@ -150,12 +194,12 @@ const styles = StyleSheet.create({
   mt20: {
     marginTop: 20,
   },
-  signInButton: {
+  signUpButton: {
     backgroundColor: '#0891b2',
     borderRadius: 8,
     height: 50,
   },
-  linksContainer: {
+  loginLinkContainer: {
     marginTop: 30,
     alignItems: 'center',
   },
